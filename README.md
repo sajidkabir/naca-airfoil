@@ -3,6 +3,7 @@
 [![CI](https://github.com/sajidkabir/naca-airfoil/actions/workflows/ci.yml/badge.svg)](https://github.com/sajidkabir/naca-airfoil/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23077767.svg)](https://doi.org/10.5281/zenodo.23077767)
 
 A NACA 4-digit airfoil generator and analyzer. Give it a designation like
 `2412` and it builds the section coordinates from the classic NACA
@@ -205,6 +206,14 @@ not move the validated numbers without explaining why in the PR.
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md).
+
+## Citation
+
+If you use this project in research, please cite the archived release:
+
+Sajid Kabir Saji (2026). naca-airfoil (v1.0.1) [Software]. Zenodo. https://doi.org/10.5281/zenodo.23077768
+
+The concept DOI https://doi.org/10.5281/zenodo.23077767 always resolves to the latest version.
 
 ## License
 
