@@ -9,8 +9,8 @@ A NACA 4-digit airfoil generator and analyzer. Give it a designation like
 `2412` and it builds the section coordinates from the classic NACA
 definitions, reports the geometry (max camber, max thickness, and where
 they sit on the chord), estimates the aerodynamics with thin-airfoil
-theory, and exports the coordinates in the formats the airfoil world
-actually uses.
+theory and a vortex panel method, and exports the coordinates in the
+formats the airfoil world actually uses.
 
 Every student of aerodynamics meets these sections, usually as a table of
 numbers copied from a textbook. This package exists so the numbers are
@@ -34,10 +34,15 @@ that check the results against the published values for the NACA 2412.
   moment coefficient from the Fourier integrals of the camber slope,
   evaluated numerically so any 4-digit camber line works, plus the
   classic 2 pi lift-curve slope and a lift coefficient function.
+- **Vortex panel method**: a Hess and Smith style constant source /
+  constant vortex panel solver with the Kutta condition, giving the
+  surface pressure distribution, lift, and quarter-chord moment with
+  thickness effects. Inviscid and incompressible, for small angles.
 - **Export**: Selig-style .dat files (the UIUC database format) and CSV,
   written to six decimals, with a matching reader for round trips.
 - **Plotting**: equal-aspect PNG of the section with its camber line.
-- **CLI**: `gen`, `export`, and `plot` subcommands, plus a Python API.
+- **CLI**: `gen`, `panel`, `export`, and `plot` subcommands, plus a
+  Python API.
 
 ## Installation
 
@@ -85,6 +90,21 @@ naca-airfoil export 2412 --out naca2412.csv
 naca-airfoil plot 2412 --output naca2412.png
 ```
 
+Panel-method analysis at an angle of attack:
+
+```bash
+naca-airfoil panel 2412 --alpha 4
+```
+
+```text
+NACA 2412 airfoil, vortex panel method (399 panels)
+  Angle of attack: 4.00 deg
+  Lift coeff:      Cl = 0.7274
+  Moment coeff:    Cm_c4 = -0.0588
+  Min Cp:          -2.350 (max 0.999)
+  Inviscid and incompressible; valid at small angles, well below stall.
+```
+
 ### Python API
 
 ```python
@@ -98,6 +118,10 @@ theory = thin_airfoil_theory(airfoil)
 print(f"Zero-lift AoA: {theory.alpha_l0_deg:.2f} deg")
 print(f"Cl at 4 deg:   {theory.lift_coefficient(4.0):.3f}")
 
+from naca_airfoil import panel_method
+panel = panel_method(airfoil, 4.0)
+print(f"Panel Cl at 4 deg: {panel.cl:.4f}, Cm_c4 = {panel.cm_c4:.4f}")
+
 write_dat(airfoil, "naca2412.dat")
 xs, ys = airfoil.coordinates()  # one ordered loop, TE to TE
 ```
@@ -108,6 +132,7 @@ xs, ys = airfoil.coordinates()  # one ordered loop, TE to TE
 | --- | --- |
 | `airfoil.py` | Designation parsing, thickness and camber line, surface construction |
 | `theory.py` | Thin-airfoil theory: Fourier integrals of the camber slope |
+| `panel.py` | Vortex panel method: source/vortex panels, Kutta, Cp, Cl, Cm |
 | `export.py` | Selig-style .dat and CSV writers, .dat reader |
 | `plot.py` | Equal-aspect PNG plotting (matplotlib, Agg backend) |
 | `cli.py` | Command-line interface |
@@ -127,10 +152,14 @@ the trailing edge):
 - Lift: cl = 2 * pi * (alpha - alpha_L0).
 - Quarter-chord moment: cm_c4 = (pi/4) * (A2 - A1), where A1 and A2 are
   the first two Fourier coefficients of the camber slope.
+- Panel method: constant-strength source on each panel plus one vortex
+  strength for all panels, flow tangency at panel midpoints, Kutta
+  condition (equal and opposite tangential velocity at the trailing
+  edge), then Cp = 1 - (Vt/Vinf)^2 integrated over the surface.
 
 ## Validation and sanity checks
 
-The test suite (25 checks) tests the aerodynamics, not just the plumbing:
+The test suite (34 checks) tests the aerodynamics, not just the plumbing:
 
 - The 2412 generates max thickness 12.00 percent at x/c 0.30 and max
   camber 2.00 percent at x/c 0.40, the values in its own designation.
@@ -144,18 +173,30 @@ The test suite (25 checks) tests the aerodynamics, not just the plumbing:
   within 1e-6.
 - The parser rejects malformed designations (wrong length, non-digits,
   zero thickness, camber peaking at the leading edge).
+- The panel method reproduces the exact lifting cylinder flow (with
+  prescribed circulation) to within 0.5 percent on lift.
+- Panel results for the 2412: alpha_L0 = -2.17 deg (thin-airfoil -2.08),
+  Cl = 0.255 at zero angle (thin-airfoil 0.228), cm_c4 = -0.055
+  (thin-airfoil -0.053).
+- Panel lift for the 0012 at 4 deg is Cl = 0.474, against 0.439 from
+  thin-airfoil theory and 0.472 from published viscous CFD; the panel
+  method resolves the thickness, which thin-airfoil theory ignores.
 
 One deliberate note on the moment coefficient: thin-airfoil theory gives
 cm_c4 = -0.053 for the 2412, while wind-tunnel section data reports
 about -0.09 to -0.10. Both numbers are in the tests and docs on purpose.
 Thin-airfoil theory models the camber line only (no thickness, no
 viscosity), and underpredicting the moment is a known limitation of the
-theory, not a bug in the integration.
+theory, not a bug in the integration. The panel method closes most of
+that gap on the inviscid side (cm_c4 = -0.055 with thickness).
 
 ## Honest limitations
 
-- Thin-airfoil theory only: inviscid, incompressible, two-dimensional,
-  small angles. No stall, no Reynolds number effects, no drag.
+- Inviscid, incompressible, two-dimensional, small angles. No stall, no
+  Reynolds number effects, no drag. The panel method is first order
+  (constant-strength panels); lift runs a few percent above thin-airfoil
+  theory because it resolves the thickness, consistent with published
+  CFD, but treat the third decimal as approximate.
 - 4-digit sections only (for now): no 5-digit or 6-series sections.
 - Geometry is the analytic NACA definition, not measured coordinates;
   real manufactured sections differ slightly.
@@ -168,9 +209,6 @@ theory, not a bug in the integration.
 
 Ideas are welcome. Roughly in order of expected value:
 
-- **Vortex panel method**: a Hess and Smith style panel solver for
-  pressure distributions and lift with thickness effects, which should
-  close most of the moment gap described above.
 - **Viscous coupling**: a simple boundary-layer correction, or an
   optional XFOIL bridge, for drag polars and stall estimates.
 - **More families**: NACA 5-digit and 6-series sections, which need
@@ -191,9 +229,9 @@ it did to the 2412 reference numbers.
 ## Project structure
 
 ```text
-src/naca_airfoil/    the package (airfoil, theory, export, plot, cli)
+src/naca_airfoil/    the package (airfoil, theory, panel, export, plot, cli)
 tests/               pytest suite, published-value checks included
-examples/            runnable example: generate, export, plot a 2412
+examples/            runnable examples: 2412 summary, panel comparison
 .github/workflows/   CI: install and run the test suite on every push
 ```
 

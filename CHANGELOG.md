@@ -4,6 +4,27 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-10-03
+
+### Added
+
+- Vortex panel method (`panel_method` in new module `panel.py`): a
+  Hess and Smith style solver with constant-strength source panels,
+  one constant vortex strength, flow tangency at panel midpoints, and
+  the Kutta condition. Returns the surface pressure distribution,
+  lift coefficient, and quarter-chord moment coefficient (aerodynamic
+  sign convention) via direct pressure integration. For the NACA 2412
+  at 2 deg: Cl = 0.492, cm_c4 = -0.057; for the 0012 at 4 deg:
+  Cl = 0.474 (thin-airfoil theory gives 0.439; published viscous CFD
+  gives 0.472, the thickness effect the panel method resolves).
+- `panel` CLI subcommand: `naca-airfoil panel 2412 --alpha 4` prints
+  Cl, Cm_c4, and the Cp range from the panel solution.
+- Test suite grows to 34 checks, including panel-method validation
+  against the exact lifting-cylinder flow and the published 2412/0012
+  reference values.
+- Example `examples/panel_2412_example.py`: panel method vs
+  thin-airfoil theory across angles of attack.
+
 ## [1.0.0] - 2026-10-01
 
 First stable release.

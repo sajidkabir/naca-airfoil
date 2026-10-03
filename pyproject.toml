@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "naca-airfoil"
-version = "1.0.0"
-description = "NACA 4-digit airfoil generator and analyzer: coordinates, thin-airfoil theory estimates, export and plotting"
+version = "1.1.0"
+description = "NACA 4-digit airfoil generator and analyzer: coordinates, thin-airfoil and panel-method aerodynamics, export and plotting"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Sajid Kabir Saji" }]
